@@ -1,17 +1,21 @@
 import streamlit as st
 import pandas as pd
 import os
-import re # Para limpieza de texto
+import re
 
 # --- 1. CONFIGURACIÓN ---
-st.set_page_config(page_title="IUT-RC: Acceso Seguro", layout="centered")
+st.set_page_config(page_title="IUT-RC: Evaluación TDA", page_icon="📡")
 
 # --- 2. CARGA DE DATOS ---
 @st.cache_data
 def cargar_estudiantes():
     if os.path.exists("iut_mission/estudiantes_iut.csv"):
-        return pd.read_csv("iut_mission/estudiantes_iut.csv", dtype={'cedula': str})
-    return pd.DataFrame({'cedula': [], 'nombre': []})
+        df = pd.read_csv("iut_mission/estudiantes_iut.csv", dtype=str)
+        df.columns = [str(c).strip().lower() for c in df.columns]
+        # Normalizamos nombres de columnas comunes
+        df = df.rename(columns={'nombres y apellido': 'nombre', 'nombres y apellidos': 'nombre', 'cedula ': 'cedula'})
+        return df
+    return pd.DataFrame(columns=['nombre', 'cedula'])
 
 @st.cache_data
 def cargar_preguntas():
@@ -19,72 +23,58 @@ def cargar_preguntas():
         return pd.read_csv("iut_mission/preguntas_tda.csv")
     return pd.DataFrame()
 
-# --- 3. LÓGICA DE VALIDACIÓN ---
-st.title("📡 IUT-RC: Sistema de Evaluación")
-
+# --- 3. INTERFAZ ---
+st.title("📡 IUT-RC: Evaluación TDA")
 df_estudiantes = cargar_estudiantes()
 df_preguntas = cargar_preguntas()
 
-# Estado de la sesión para saber si el alumno ya fue validado
-if 'validado' not in st.session_state:
-    st.session_state.validado = False
-    st.session_state.nombre_alumno = ""
+# Selección de preguntas (se queda fija en la sesión)
+if 'preguntas_examen' not in st.session_state:
+    st.session_state.preguntas_examen = df_preguntas.sample(min(5, len(df_preguntas))).to_dict('records')
 
-# --- PASO A: EL FILTRO DE ENTRADA ---
-if not st.session_state.validado:
-    with st.container():
-        st.subheader("Acceso Estudiantil")
-        input_cedula = st.text_input("Ingrese su Cédula (solo números):")
-        
-        if st.button("Confirmar Cédula y Acceder"):
-            # LIMPIEZA ANTI-DUMMIES: Quitamos todo lo que no sea número
-            cedula_limpia = re.sub(r"\D", "", input_cedula)
-            
-            if cedula_limpia in df_estudiantes['cedula'].values:
-                # Buscamos el nombre
-                nombre = df_estudiantes[df_estudiantes['cedula'] == cedula_limpia]['nombre'].values[0]
-                st.session_state.validado = True
-                st.session_state.nombre_alumno = nombre
-                st.session_state.cedula_alumno = cedula_limpia
-                st.rerun() # Refrescamos para mostrar el examen
-            else:
-                st.error("⚠️ Cédula no encontrada. Verifique o contacte al Prof. Duque.")
-
-# --- PASO B: EL EXAMEN (Solo si está validado) ---
-else:
-    st.success(f"Bienvenido, **{st.session_state.nombre_alumno}**")
+# FORMULARIO ABIERTO
+with st.form("examen_abierto"):
+    st.subheader("Identificación del Estudiante")
+    cedula_input = st.text_input("Ingrese su Cédula (solo números):")
     
-    # Seleccionamos preguntas si no existen en la sesión
-    if 'preguntas_examen' not in st.session_state:
-        st.session_state.preguntas_examen = df_preguntas.sample(min(5, len(df_preguntas))).to_dict('records')
+    st.divider()
+    st.info("Responda las siguientes preguntas sobre la norma ISDB-Tb:")
+    
+    respuestas_usuario = []
+    for i, p in enumerate(st.session_state.preguntas_examen):
+        st.write(f"**{i+1}. {p['pregunta']}**")
+        opciones = [p['a'], p['b'], p['c'], p['d']]
+        resp = st.radio(f"Opción para Q{i+1}:", opciones, key=f"q{i}", index=None)
+        
+        if resp:
+            letra_resp = chr(97 + opciones.index(resp))
+            respuestas_usuario.append(letra_resp)
+        else:
+            respuestas_usuario.append(None)
 
-    with st.form("examen_tda"):
-        respuestas_usuario = []
-        for i, p in enumerate(st.session_state.preguntas_examen):
-            st.write(f"**{i+1}. {p['pregunta']}**")
-            opciones = [p['a'], p['b'], p['c'], p['d']]
-            resp = st.radio(f"Opción para Q{i+1}:", opciones, key=f"q{i}", index=None)
+    enviar = st.form_submit_button("FINALIZAR Y ENVIAR")
+
+    if enviar:
+        if not cedula_input:
+            st.error("⚠️ La cédula es obligatoria para registrar la nota.")
+        elif None in respuestas_usuario:
+            st.warning("⚠️ Por favor, responda todas las preguntas.")
+        else:
+            # LIMPIEZA Y BÚSQUEDA DEL NOMBRE (EL PUENTE)
+            c_limpia = re.sub(r"\D", "", cedula_input)
+            match = df_estudiantes[df_estudiantes['cedula'].str.strip() == c_limpia]
             
-            if resp:
-                letra_resp = chr(97 + opciones.index(resp))
-                respuestas_usuario.append(letra_resp)
+            # Si lo encuentra, usa el nombre; si no, usa la cédula
+            identidad = match.iloc[0]['nombre'].split()[0] if not match.empty else f"Bachiller {c_limpia}"
+            
+            # CÁLCULO DE NOTA
+            nota = sum(4 for i, p in enumerate(st.session_state.preguntas_examen) if respuestas_usuario[i] == p['correcta'])
+            
+            st.divider()
+            st.header(f"Calificación: {nota}/20")
+            
+            if nota >= 10:
+                st.balloons()
+                st.success(f"¡Excelente trabajo, {identidad}!")
             else:
-                respuestas_usuario.append(None)
-
-        if st.form_submit_button("Finalizar Evaluación"):
-            if None in respuestas_usuario:
-                st.warning("⚠️ Responda todas las preguntas antes de enviar.")
-            else:
-                nota = sum(4 for i, p in enumerate(st.session_state.preguntas_examen) if respuestas_usuario[i] == p['correcta'])
-                
-                st.metric("RESULTADO FINAL", f"{nota}/20")
-                if nota >= 10:
-                    st.balloons()
-                    st.success(f"¡Excelente, {st.session_state.nombre_alumno}!")
-                else:
-                    st.error("Debe reforzar los conocimientos técnicos.")
-                
-                # Botón opcional para salir
-                if st.button("Cerrar Sesión"):
-                    st.session_state.validado = False
-                    st.rerun()
+                st.warning(f"{identidad}, necesita repasar los parámetros de modulación.")
