@@ -27,6 +27,25 @@ def cargar_banco():
         }
         return pd.DataFrame(data)
 
+for i, p in enumerate(st.session_state.preguntas_examen):
+            st.write(f"**{i+1}. {p['pregunta']}**")
+            opciones = [p['a'], p['b'], p['c'], p['d']]
+            
+            # --- CAMBIO AQUÍ: index=None para que aparezca vacío ---
+            resp = st.radio(
+                f"Seleccione su respuesta (Q{i+1}):", 
+                opciones, 
+                key=f"q{i}", 
+                index=None
+            )
+            
+            # Validamos si respondió algo para no dar error de índice
+            if resp:
+                letra_resp = chr(97 + opciones.index(resp))
+                respuestas_usuario.append(letra_resp)
+            else:
+                respuestas_usuario.append(None) # Si no marca nada, queda vacío
+
 # --- 3. LÓGICA DE EXAMEN ---
 st.title("📡 IUT-RC: TV Universitaria Interactiva")
 st.markdown("### Evaluación de Televisión Digital Abierta")
