@@ -1,8 +1,61 @@
 import streamlit as st
+from streamlit_gsheets import GSheetsConnection
 import pandas as pd
-import os
-import re
 from datetime import datetime
+
+# --- CONEXIÓN A GOOGLE SHEETS ---
+# Configura esto en tu Streamlit Cloud (Secrets)
+conn = st.connection("gsheets", type=GSheetsConnection)
+
+def registrar_en_nube(nombre, cedula, nota, intento):
+    # Leemos lo que hay para no borrar nada
+    df_existente = conn.read(spreadsheet="https://docs.google.com/spreadsheets/d/1DFneYggw8TZQ0PSAKWWeyhRGHW5HQbTJhD_-ThdfFfc/edit?gid=0#gid=0")
+    
+    nuevo_registro = pd.DataFrame([{
+        "nombre": nombre,
+        "cedula": str(cedula),
+        "nota": nota,
+        "intento": intento,
+        "fecha": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+    }])
+    
+    df_final = pd.concat([df_existente, nuevo_registro], ignore_index=True)
+    conn.update(spreadsheet="https://docs.google.com/spreadsheets/d/1DFneYggw8TZQ0PSAKWWeyhRGHW5HQbTJhD_-ThdfFfc/edit?gid=0#gid=0", data=df_final)
+
+# --- LÓGICA DE VALIDACIÓN E INTENTOS ---
+if st.session_state.paso == "identificacion":
+    st.title("📡 Acceso Controlado - TDA")
+    ced_input = st.text_input("Ingrese su Cédula:")
+    
+    if st.button("Validar"):
+        c_limpia = "".join(filter(str.isdigit, ced_input))
+        match = df_estudiantes[df_estudiantes['cedula'] == c_limpia]
+        
+        if not match.empty:
+            # BUSCAMOS INTENTOS PREVIOS EN EL SHEET
+            df_historico = conn.read(spreadsheet="https://docs.google.com/spreadsheets/d/1DFneYggw8TZQ0PSAKWWeyhRGHW5HQbTJhD_-ThdfFfc/edit?gid=0#gid=0")
+            intentos_previos = len(df_historico[df_historico['cedula'] == c_limpia])
+            
+            if intentos_previos >= 3:
+                st.error(f"❌ Bachiller {match.iloc[0]['nombre']}, ya agotó sus 3 intentos permitidos.")
+            else:
+                st.session_state.nombre = match.iloc[0]['nombre'].title()
+                st.session_state.cedula = c_limpia
+                st.session_state.intento_actual = intentos_previos + 1
+                st.session_state.paso = "confirmacion"
+                st.rerun()
+
+# NUEVO PASO: LA ADVERTENCIA DE "GENERAR INTENTO"
+elif st.session_state.paso == "confirmacion":
+    st.warning(f"⚠️ ATENCIÓN: {st.session_state.nombre}")
+    st.write(f"Usted va por el **INTENTO {st.session_state.intento_actual} de 3**.")
+    st.write("Al presionar el botón de abajo, se cargarán las preguntas y el intento quedará registrado. Si cierra la página, perderá esta oportunidad.")
+    
+    if st.button(f"🚀 GENERAR INTENTO {st.session_state.intento_actual}"):
+        # Registramos el inicio del intento con nota 0 por si abandona
+        registrar_en_nube(st.session_state.nombre, st.session_state.cedula, 0, st.session_state.intento_actual)
+        st.session_state.paso = "examen"
+        st.rerun()
 
 # --- 1. CONFIGURACIÓN ---
 st.set_page_config(page_title="IUT-RC: Certificación TDA", page_icon="📡")
