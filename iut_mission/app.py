@@ -36,7 +36,7 @@ df_preguntas = cargar_preguntas()
 # PASO 1: IDENTIFICACIÓN RÍGIDA
 if st.session_state.paso == "identificacion":
     st.title("📡 Acceso al Sistema de Evaluación")
-    ced_input = st.text_input("Ingrese su Cédula (Solo números):", placeholder="Ej: 31261361")
+    ced_input = st.text_input("Ingrese su Cédula (Solo números):", placeholder="Ej: 87654321")
     
     if st.button("Validar Identidad"):
         c_limpia = re.sub(r"\D", "", ced_input)
@@ -48,7 +48,7 @@ if st.session_state.paso == "identificacion":
             st.session_state.paso = "examen"
             st.rerun()
         else:
-            st.error("⚠️ Cédula no autorizada en el padrón electoral del IUT-RC.")
+            st.error("⚠️ Cédula no registrada en la cátedra del Prof. Duque")
 
 # PASO 2: EL EXAMEN (BLOQUEADO)
 elif st.session_state.paso == "examen":
