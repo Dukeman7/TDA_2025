@@ -26,7 +26,27 @@ def registrar_en_nube(nombre, cedula, nota, intento):
             "fecha": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
         }])
         
-        # Concatenar y actualizar
+from datetime import datetime, timedelta
+
+def registrar_en_nube(nombre, cedula, nota, intento):
+    try:
+        # 1. Ajustamos la hora: Restamos 4 horas al servidor (UTC -> VET)
+        hora_caracas = datetime.now() - timedelta(hours=4)
+        fecha_formateada = hora_caracas.strftime("%d/%m/%Y %H:%M:%S")
+
+        # 2. Leemos los datos actuales
+        df_existente = conn.read(spreadsheet=URL_SHEET, ttl=0)
+        
+        # 3. Creamos la nueva fila con la hora corregida
+        nuevo_registro = pd.DataFrame([{
+            "nombre": nombre,
+            "cedula": str(cedula),
+            "nota": nota,
+            "intento": intento,
+            "fecha": fecha_formateada
+        }])
+        
+        # 4. Concatenamos y actualizamos la hoja de Google
         df_final = pd.concat([df_existente, nuevo_registro], ignore_index=True)
         conn.update(spreadsheet=URL_SHEET, data=df_final)
     except Exception as e:
