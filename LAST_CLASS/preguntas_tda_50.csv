@@ -1,0 +1,54 @@
+pregunta,a,b,c,d,correcta
+¿Cuál es el estándar adoptado en Venezuela para TDA?,DVB-T,ATSC,ISDB-Tb,DTMB,c
+¿Qué técnica de modulación utiliza el sistema ISDB-Tb?,QAM Directa,COFDM,8-VSB,SSB,b
+¿Qué ancho de banda ocupa un canal de TDA en Venezuela?,6 MHz,7 MHz,8 MHz,10 MHz,a
+¿Qué middleware permite la interactividad en el estándar?,JavaTV,MHP,Ginga,Flash Player,c
+¿Cuál es la relación de aspecto estándar para HD en TDA?,4:3,16:9,21:9,1:1,b
+¿Qué tipo de compresión de video se usa en la TDA local?,MPEG-2,H.263,H.264 (MPEG-4 AVC),HEVC,c
+¿Cómo se denomina al flujo de datos que transporta video y audio?,Stream de Bit,Transport Stream (TS),Data Pipe,Multiplex,b
+¿A qué se le llama canal Tabú en TV analógica?,Que tranmite canales de adultos,Que impide usar canales adyacentes superior e inferior,Que no se pueden otorgar por intereses cruzados,Que son prohibidos por la UIT en Ginebra,b
+¿Cuál es el valor de la frecuencia central de la portadora de color del canal 33 UHF?,588.00 MHz,558.58 MHz,585.85 MHz,588.83 MHz,d
+Si la portadora de video (luminancia) de un canal es 753.25 MHz ¿Cuál será el valor de la frecuencia de la portadora de audio?,757.75 MHz,775.77 MHz,777.77 MHz,755.55 MHz,a
+Las señales de color se componen de los colores R G y B ¿En qué proporción se cuantifica la luminancia Y con respecto a R/G/B?,30/59/11,51/29/30,30/51/29,11/30/29,a
+¿Cuál es la constitución en binario R/G/B del color magenta?,1/1/1,1/0/1,0/1/1,1/0/0,b
+¿A qué separación del inicio de canal se ubica la portadora de luminancia en TV analógica?,1.0MHz,1.5MHz,1.25MHz,1.75MHz,c
+¿Cuál es el valor del intervalo de guarda más común en ISDB-Tb para redes de alta movilidad?,1/4,1/8,1/16,1/32,a
+¿Qué parámetro mide la desviación de los puntos de la constelación respecto a su posición ideal?,BER,SNR,MER,C/N,c
+¿Cuántas portadoras tiene el Modo 3 (8k) del sistema ISDB-Tb?,1405,2809,5617,8192,c
+¿Cuál es la tasa de bits máxima teórica en un canal de 6 MHz con 64QAM y FEC 7/8?,19.33 Mbps,23.23 Mbps,28.17 Mbps,32.00 Mbps,b
+¿Qué técnica permite la recepción de señales de TV en dispositivos móviles dentro del estándar ISDB-Tb?,Full-Seg,HD-Seg,One-Seg,Mobile-Seg,c
+¿Qué nombre recibe el fenómeno donde la señal digital desaparece bruscamente al bajar el nivel de recepción?,Efecto fantasma,Efecto nieve,Efecto Acantilado (Cliff Effect),Interferencia cocanal,c
+¿Cuál es el acrónimo para la interferencia que ocurre entre símbolos adyacentes?,ISI,ICI,MER,FEC,a
+¿Qué capa del estándar ISDB-Tb se encarga de la multiplexación de los servicios?,Capa física,Capa de enlace,Capa de transporte (MPEG-2 TS),Capa de aplicación,c
+¿Cuál es la separación entre portadoras en el Modo 3 (8k)?,3.968 kHz,0.992 kHz,1.116 kHz,4.464 kHz,b
+¿Qué tipo de modulación se usa específicamente para las portadoras piloto y de control (TMCC)?,QPSK,BPSK,DBPSK,16QAM,c
+¿Cuál es el rol del código Reed-Solomon en el estándar ISDB-Tb?,Modulación,Corrección de errores externa,Entrelazado,Sincronismo,b
+¿Qué significa el acrónimo COFDM?,Coded Orthogonal Frequency Division Multiplexing,Continuous Output Frequency Digital Modulation,Circular Orthogonal Frequency Division Multiplexing,Coded Output Frequency Digital Multiplexing,a
+¿Cuál es la función del Intervalo de Guarda?,Aumentar la velocidad de datos,Protección contra ecos y multitrayecto,Mejorar la resolución de imagen,Cambiar la frecuencia,b
+En una señal NTSC ¿Qué línea del VBI se usa comúnmente para el Close Caption?,Línea 10,Línea 17,Línea 21,Línea 23,c
+¿Cuál es la subportadora de color en el sistema NTSC?,3.58 MHz,4.43 MHz,1.25 MHz,4.50 MHz,a
+¿Qué parámetro define la eficiencia de una antena Log-Periódica?,ROE,Relación Delante/Atrás (F/B Ratio),Directividad,Todas las anteriores,d
+¿Cuál es la ganancia típica de una antena DAT-45 de Televés?,12 dBi,17 dBi,22 dBi,25 dBi,b
+¿Qué es el Ginga en el contexto de la TDA?,Un tipo de antena,El estándar de interactividad (Middleware),Un codec de video,Un satélite,b
+¿Qué banda de frecuencia utiliza principalmente la TDA en Venezuela?,VHF Low,VHF High,UHF,Banda L,c
+¿Qué tipo de entrelazado de datos se usa para combatir ráfagas de ruido en el tiempo?,Entrelazado de frecuencia,Entrelazado de tiempo,Entrelazado de bytes,No se usa entrelazado,b
+¿Cuál es el valor de la frecuencia de la portadora de video en el canal 2 (VHF)?,54.00 MHz,55.25 MHz,59.75 MHz,61.25 MHz,b
+¿Qué es la polarización circular en antenas?,Cuando el vector E gira 360 grados por ciclo,Cuando la antena es redonda,Cuando la señal solo viaja al norte,Cuando no hay polarización,a
+¿Cuál es el beneficio de usar 64QAM frente a QPSK?,Mayor robustez al ruido,Mayor tasa de transferencia de datos,Menor ancho de banda,Mayor alcance,b
+¿Qué tabla del MPEG-TS contiene los identificadores de los programas (PIDs)?,PAT,PMT,NIT,SDT,b
+¿Qué es un SFN (Single Frequency Network)?,Una red donde todos los transmisores usan el mismo canal,Una red con una sola antena,Una red de radio AM,Una red de fibra óptica,a
+¿Qué componente elimina las componentes de frecuencia no deseadas a la salida del transmisor?,Excitador,Filtro de Máscara,Amplificador,Modulador,b
+¿Cuál es el nivel de señal mínimo recomendado (Threshold) para una recepción estable en TDA?,-50 dBm,-75 dBm,-93 dBm,-110 dBm,c
+¿Qué es el Duty Cycle en una señal de pulso?,La relación entre el tiempo activo y el periodo total,La potencia del pulso,La frecuencia del pulso,La forma del pulso,a
+¿Cuál es la impedancia característica estándar en sistemas de RF de TV?,50 Ohmios,75 Ohmios,120 Ohmios,300 Ohmios,b
+¿Qué parámetro de la antena indica cuánta energía se refleja hacia el transmisor?,Ganancia,Apertura,ROE (VSWR),Lóbulos secundarios,c
+¿Qué es el 'Shoulder Level' en un espectro OFDM?,La potencia del canal,La diferencia entre el nivel del canal y las espurias adyacentes,El ancho de banda,El nivel de ruido,b
+¿Qué codificación de audio es el estándar para TDA en ISDB-Tb?,MP3,AAC / HE-AAC,AC3,DTS,b
+¿Cuál es la función del bloque FEC (Forward Error Correction)?,Cifrar la señal,Detectar y corregir errores sin retransmisión,Comprimir el video,Modular la portadora,b
+¿Cuántos segmentos (slots) componen un canal ISDB-Tb completo?,10,13,14,16,b
+¿Qué es el Doppler shift?,Cambio de frecuencia por movimiento relativo,Un tipo de antena,Ruido de fase,Un filtro digital,a
+¿Qué técnica de compresión de video utiliza la TDA en Venezuela?,MPEG-1,MPEG-2,H.264 (MPEG-4 AVC),AV1,c
+¿Qué es una antena Yagi-Uda?,Una antena parabólica,Una antena de hilo,Una antena directiva con elementos parásitos,Una antena omnidireccional,c
+¿Cuál es el ancho de banda efectivo de un segmento (One-Seg)?,~330 kHz,~428 kHz,~500 kHz,~1 MHz,b
+¿Qué es la relación C/N?,Carrier to Noise Ratio,Channel to Network,Cable to Node,Constellation / Noise,a
+¿Qué significa 'Simulcast'?,Transmitir en digital y analógico simultáneamente,Transmitir dos canales HD,Transmitir por radio y TV,Transmitir por satélite y cable,a
