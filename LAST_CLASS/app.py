@@ -1,3 +1,4 @@
+import requests
 import streamlit as st
 import pandas as pd
 import os
@@ -11,7 +12,7 @@ st.set_page_config(page_title="UNETRANS: Certificación TDA", page_icon="📡", 
 
 # --- 2. CONEXIÓN Y CONSTANTES ---
 conn = st.connection("gsheets", type=GSheetsConnection)
-URL_SHEET = "https://docs.google.com/spreadsheets/d/1DFneYggw8TZQ0PSAKWWeyhRGHW5HQbTJhD_-ThdfFfc/edit?usp=sharing"
+URL_PUENTE = "https://script.google.com/macros/s/AKfycbyiq-eYHWP4sJKo1zMBwbB0Nx3XaHw_a4HEtm8dz48w6huJKWq-mwJYDJnp2cpLda5q0A/exec"
 PASS_PROF = "BunkerTDA2024" # Contraseña para activar preguntas en vivo
 
 def registrar_en_nube(datos):
@@ -51,40 +52,39 @@ if 'fase' not in st.session_state:
 # --- 5. PANEL DEL PROFESOR (Hidden) ---
 # --- 5. PANEL DEL PROFESOR (Master Control) ---
 with st.sidebar:
-    st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/b/b0/Logo_Unetrans.png/250px-Logo_Unetrans.png", width=100)
-    st.markdown("### 🛠️ Control Maestro TOMs")
+    st.title("🎮 Panel de Control TDA")
     
-    key = st.text_input("Acceso Prof:", type="password")
+    # Llave de acceso para que los alumnos no traviesen el panel
+    clave = st.text_input("Clave del Profesor:", type="password")
     
-    if key == PASS_PROF:
-        st.success("Modo Instructor Activo")
+    if clave == "BunkerTDA2024":
+        st.success("Conexión Maestra Activa")
         
-        # Selector de pregunta basado en el CSV de 50 preguntas
-        id_seleccionado = st.number_input("Lanzar Pregunta ID (0-50):", 0, len(df_pre)-1, key="selector_q")
+        # Selector de la pregunta (basado en tu CSV de preguntas)
+        id_q = st.number_input("Seleccione ID de Pregunta (0-50):", 0, 50, key="selector_maestro")
         
-        if st.button("🚀 ACTIVAR PREGUNTA (60s)"):
-            # Sincronizamos con la hora de Caracas (UTC-4)
-            timestamp_inicio = time.time()
-            
-            # Preparamos el DataFrame para la pestaña CONTROL
-            # Debe tener exactamente estas columnas: id_activa, inicio, estado
-            df_control = pd.DataFrame([{
-                "id_activa": int(id_seleccionado),
-                "inicio": timestamp_inicio,
+        # BOTÓN DE DISPARO (LANZAR)
+        if st.button("🚀 LANZAR PREGUNTA AL AIRE"):
+            payload = {
+                "id_activa": int(id_q),
+                "inicio": time.time(),
                 "estado": "ACTIVA"
-            }])
-            
+            }
             try:
-                # Actualizamos la pestaña CONTROL en el GSheet
-                conn.update(spreadsheet=URL_SHEET, worksheet="CONTROL", data=df_control)
-                st.success(f"📡 SEÑAL AL AIRE: Pregunta {id_seleccionado}")
-                st.balloons()
+                # Aquí es donde ocurre la magia: enviamos al Apps Script
+                envio = requests.post(URL_PUENTE, json=payload, timeout=10)
+                if envio.status_code == 200:
+                    st.toast("¡Señal transmitida con éxito!", icon="📡")
+                    st.balloons()
+                else:
+                    st.error("Error: El repetidor no respondió.")
             except Exception as e:
-                st.error(f"Error al transmitir: {e}")
-                
-        if st.button("🛑 APAGAR TRANSMISIÓN"):
-            df_off = pd.DataFrame([{"id_activa": 0, "inicio": 0, "estado": "OFF"}])
-            conn.update(spreadsheet=URL_SHEET, worksheet="CONTROL", data=df_off)
+                st.error(f"Falla de red: {e}")
+
+        # BOTÓN DE APAGADO (RESET)
+        if st.button("🛑 APAGAR SEÑAL"):
+            payload_off = {"id_activa": 0, "inicio": 0, "estado": "OFF"}
+            requests.post(URL_PUENTE, json=payload_off)
             st.info("Transmisor en Standby")
 
 # --- 6. FLUJO ESTUDIANTE ---
