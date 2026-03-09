@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import time
+import os
 import requests
 from streamlit_gsheets import GSheetsConnection
 
@@ -24,9 +25,20 @@ def enviar_al_puente(payload):
 # --- 3. CARGA DE DATOS ---
 @st.cache_data(ttl=600)
 def cargar_csvs():
-    # Asegúrate de que estos archivos estén en tu GitHub
-    preguntas = pd.read_csv("preguntas_tda_50.csv")
-    estudiantes = pd.read_csv("estudiantes_iut.csv", dtype=str)
+    # Detectamos la ruta donde está parado el archivo app.py
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    
+    # Armamos la ruta completa a los archivos
+    ruta_preguntas = os.path.join(BASE_DIR, "preguntas_tda_50.csv")
+    ruta_estudiantes = os.path.join(BASE_DIR, "estudiantes_iut.csv")
+    
+    # Verificamos si existen antes de intentar leer
+    if not os.path.exists(ruta_preguntas):
+        st.error(f"❌ No se halló preguntas_tda_50.csv en {BASE_DIR}")
+        st.stop()
+        
+    preguntas = pd.read_csv(ruta_preguntas)
+    estudiantes = pd.read_csv(ruta_estudiantes, dtype=str)
     return preguntas, estudiantes
 
 df_pre, df_est = cargar_csvs()
