@@ -49,19 +49,43 @@ if 'fase' not in st.session_state:
     })
 
 # --- 5. PANEL DEL PROFESOR (Hidden) ---
+# --- 5. PANEL DEL PROFESOR (Master Control) ---
 with st.sidebar:
     st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/b/b0/Logo_Unetrans.png/250px-Logo_Unetrans.png", width=100)
-    st.markdown("### 🛠️ Control Maestro")
+    st.markdown("### 🛠️ Control Maestro TOMs")
+    
     key = st.text_input("Acceso Prof:", type="password")
+    
     if key == PASS_PROF:
         st.success("Modo Instructor Activo")
-        st.session_state.active_q = st.selectbox("Lanzar Pregunta ID:", range(len(df_pre)))
-        if st.button("🚀 ACTIVAR POR 60 SEG"):
-            # En un entorno real usaríamos una tabla de control en GSheets
-            # Aquí lo simulamos para la sesión actual
-            st.session_state.start_timer = time.time()
-            st.session_state.q_viva = True
-            st.broadcast("¡Pregunta activada!")
+        
+        # Selector de pregunta basado en el CSV de 50 preguntas
+        id_seleccionado = st.number_input("Lanzar Pregunta ID (0-50):", 0, len(df_pre)-1, key="selector_q")
+        
+        if st.button("🚀 ACTIVAR PREGUNTA (60s)"):
+            # Sincronizamos con la hora de Caracas (UTC-4)
+            timestamp_inicio = time.time()
+            
+            # Preparamos el DataFrame para la pestaña CONTROL
+            # Debe tener exactamente estas columnas: id_activa, inicio, estado
+            df_control = pd.DataFrame([{
+                "id_activa": int(id_seleccionado),
+                "inicio": timestamp_inicio,
+                "estado": "ACTIVA"
+            }])
+            
+            try:
+                # Actualizamos la pestaña CONTROL en el GSheet
+                conn.update(spreadsheet=URL_SHEET, worksheet="CONTROL", data=df_control)
+                st.success(f"📡 SEÑAL AL AIRE: Pregunta {id_seleccionado}")
+                st.balloons()
+            except Exception as e:
+                st.error(f"Error al transmitir: {e}")
+                
+        if st.button("🛑 APAGAR TRANSMISIÓN"):
+            df_off = pd.DataFrame([{"id_activa": 0, "inicio": 0, "estado": "OFF"}])
+            conn.update(spreadsheet=URL_SHEET, worksheet="CONTROL", data=df_off)
+            st.info("Transmisor en Standby")
 
 # --- 6. FLUJO ESTUDIANTE ---
 if st.session_state.fase == "login":
