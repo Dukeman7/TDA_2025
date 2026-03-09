@@ -25,8 +25,18 @@ def registrar_en_nube(datos):
 # --- 3. CARGA DE DATOS ---
 @st.cache_data
 def cargar_todo():
-    estudiantes = pd.read_csv("estudiantes_iut.csv", dtype=str)
-    preguntas = pd.read_csv("preguntas_tda_50.csv")
+    # Obtenemos la ruta de la carpeta donde está este script (app.py)
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    
+    ruta_est = os.path.join(BASE_DIR, "estudiantes_iut.csv")
+    ruta_pre = os.path.join(BASE_DIR, "preguntas_tda_50.csv")
+    
+    if not os.path.exists(ruta_est) or not os.path.exists(ruta_pre):
+        st.error(f"❌ Error: No se encuentran los archivos en: {BASE_DIR}")
+        st.stop()
+        
+    estudiantes = pd.read_csv(ruta_est, dtype=str)
+    preguntas = pd.read_csv(ruta_pre)
     return estudiantes, preguntas
 
 df_est, df_pre = cargar_todo()
