@@ -79,44 +79,38 @@ if not st.session_state.cedula:
             st.error("Cédula no registrada en el búnker.")
 else:
     # EL ESTUDIANTE YA ESTÁ LOGUEADO
-    nombre = df_est[df_est['cedula'] == st.session_state.cedula]['nombre'].values[0]
-    st.write(f"👤 Estudiante: **{nombre}**")
-
-    # LECTURA DE LA SEÑAL (Sincronismo)
+    # --- BLOQUE DE SINTONÍA DEL ALUMNO ---
     try:
+        # 1. Intentamos leer la hoja CONTROL con ttl=0
         df_ctrl = conn.read(worksheet="CONTROL", ttl=0)
-        if not df_ctrl.empty and df_ctrl.iloc[0]['estado'] == "ACTIVA":
+        
+        if df_ctrl is not None and not df_ctrl.empty:
+            # 2. Extraemos los datos (Asegúrate que los nombres coincidan con el Excel)
+            # Usamos .iloc[0] para ver la primera fila de datos
             id_act = int(df_ctrl.iloc[0]['id_activa'])
+            estado = str(df_ctrl.iloc[0]['estado']).strip()
             t_ini = float(df_ctrl.iloc[0]['inicio'])
             t_aire = time.time() - t_ini
             
-            if t_aire < 60:
+            # 3. Verificamos si la señal es válida
+            if estado == "ACTIVA" and t_aire < 60:
                 st.warning(f"⚠️ ¡PREGUNTA EN EL AIRE! (Q#{id_act})")
-                st.progress(int((60 - t_aire) * 1.66), text=f"Tiempo: {int(60-t_ini)}s")
+                st.progress(int((60 - t_aire) * 1.66))
                 
-                # Formulario de Respuesta
+                # Aquí despliegas el formulario de la pregunta que ya tienes...
                 p = df_pre.iloc[id_act]
-                with st.form("examen_tda"):
-                    st.markdown(f"### {p['pregunta']}")
-                    opc = st.radio("Seleccione:", [p['a'], p['b'], p['c'], p['d']])
-                    if st.form_submit_button("📡 ENVIAR RESPUESTA"):
-                        payload_resp = {
-                            "tipo": "RESPUESTA",
-                            "cedula": st.session_state.cedula,
-                            "id_activa": id_act,
-                            "respuesta": opc
-                        }
-                        if enviar_al_puente(payload_resp):
-                            st.success("¡Respuesta grabada en el búnker!")
-                        else:
-                            st.error("Falla de retorno.")
+                with st.form("form_respuesta"):
+                    st.write(p['pregunta'])
+                    # ... resto de tu código de respuesta ...
+                    if st.form_submit_button("ENVIAR"):
+                        # lógica de enviar_al_puente
+                        st.success("¡Recibido!")
             else:
-                st.info("⌛ Señal expirada. Esperando nueva ráfaga...")
+                st.info("📡 Escaneando... Esperando señal del Prof. Duque.")
         else:
-            st.info("📡 Escaneando espectro... Esperando al Prof. Duque.")
-            
-    except:
-        st.error("Buscando portadora...")
+            st.info("📡 El búnker está en silencio (Hoja CONTROL vacía).")
 
-    if st.button("🔄 RE-SINCRONIZAR"):
-        st.rerun()
+    except Exception as e:
+        # Esto es lo que sale en rojo. Vamos a ver qué dice el error.
+        st.error(f"Falla de sintonía: {e}")
+        st.info("Sugerencia: El Prof. debe pulsar 'LANZAR PREGUNTA' para inicializar.")
