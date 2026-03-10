@@ -68,49 +68,24 @@ with st.sidebar:
             st.info("Transmisor apagado")
 
 # --- 6. CUERPO PRINCIPAL: VISTA ESTUDIANTE ---
-if not st.session_state.cedula:
-    st.title("📺 Receptor TDA - Unetrans")
-    ced = st.text_input("Ingrese su Cédula para sintonizar:")
-    if st.button("CONECTAR"):
-        if ced in df_est['cedula'].values:
-            st.session_state.cedula = ced
-            st.rerun()
+# --- REPARACIÓN DE EMERGENCIA ---
+try:
+    # DEFINIMOS LA URL AQUÍ MISMO PARA QUE NO HAYA PÉRDIDA
+    URL_GSHEET = "https://docs.google.com/spreadsheets/d/1hSv4WuKk-1RR4PSjoV7peTGJksPok4PLAw0Wejy9hAM/edit?usp=sharing"
+    
+    # Forzamos la lectura usando la URL explícita
+    df_ctrl = conn.read(spreadsheet=URL_GSHEET, worksheet="CONTROL", ttl=0)
+    
+    if df_ctrl is not None and not df_ctrl.empty:
+        # ... (aquí sigue tu lógica de id_activa, estado, etc.)
+        estado = str(df_ctrl.iloc[0]['estado']).strip()
+        if estado == "ACTIVA":
+            st.warning("⚠️ ¡PREGUNTA EN EL AIRE!")
+            # (El resto del formulario...)
         else:
-            st.error("Cédula no registrada en el búnker.")
-else:
-    # EL ESTUDIANTE YA ESTÁ LOGUEADO
-    # --- BLOQUE DE SINTONÍA DEL ALUMNO ---
-    try:
-        # 1. Intentamos leer la hoja CONTROL con ttl=0
-        df_ctrl = conn.read(worksheet="CONTROL", ttl=0)
-        
-        if df_ctrl is not None and not df_ctrl.empty:
-            # 2. Extraemos los datos (Asegúrate que los nombres coincidan con el Excel)
-            # Usamos .iloc[0] para ver la primera fila de datos
-            id_act = int(df_ctrl.iloc[0]['id_activa'])
-            estado = str(df_ctrl.iloc[0]['estado']).strip()
-            t_ini = float(df_ctrl.iloc[0]['inicio'])
-            t_aire = time.time() - t_ini
-            
-            # 3. Verificamos si la señal es válida
-            if estado == "ACTIVA" and t_aire < 60:
-                st.warning(f"⚠️ ¡PREGUNTA EN EL AIRE! (Q#{id_act})")
-                st.progress(int((60 - t_aire) * 1.66))
-                
-                # Aquí despliegas el formulario de la pregunta que ya tienes...
-                p = df_pre.iloc[id_act]
-                with st.form("form_respuesta"):
-                    st.write(p['pregunta'])
-                    # ... resto de tu código de respuesta ...
-                    if st.form_submit_button("ENVIAR"):
-                        # lógica de enviar_al_puente
-                        st.success("¡Recibido!")
-            else:
-                st.info("📡 Escaneando... Esperando señal del Prof. Duque.")
-        else:
-            st.info("📡 El búnker está en silencio (Hoja CONTROL vacía).")
+            st.info("📡 Escaneando... Esperando señal del Prof. Duque.")
+    else:
+        st.info("📡 Conexión establecida. Esperando que el Prof. lance la señal.")
 
-    except Exception as e:
-        # Esto es lo que sale en rojo. Vamos a ver qué dice el error.
-        st.error(f"Falla de sintonía: {e}")
-        st.info("Sugerencia: El Prof. debe pulsar 'LANZAR PREGUNTA' para inicializar.")
+except Exception as e:
+    st.error(f"Falla de enlace: {e}")
