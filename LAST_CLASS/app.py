@@ -86,23 +86,30 @@ try:
             t_ini = float(mando['inicio'])
             t_aire = time.time() - t_ini
             
-            if t_aire < 60:
-                st.warning(f"⚠️ ¡PREGUNTA EN EL AIRE! (ID: {id_act})")
-                # ... Aquí sigue tu código para mostrar la pregunta ...
+# --- DENTRO DEL BLOQUE DE LA PREGUNTA ACTIVA ---
                 p = df_pre.iloc[id_act]
-                with st.form("respuesta_rapida"):
+                with st.form("examen_tda"):
                     st.subheader(p['pregunta'])
-                    opc = st.radio("Respuesta:", [p['a'], p['b'], p['c'], p['d']])
-                    if st.form_submit_button("ENVIAR"):
-                        payload = {"tipo": "RESPUESTA", "cedula": st.session_state.cedula, "id_activa": id_act, "respuesta": opc}
-                        requests.post(URL_PUENTE, json=payload)
-                        st.success("¡Enviado!")
-            else:
-                st.info("⌛ Señal expirada. Esperando ráfaga del Prof. Duque.")
-        else:
-            st.info("📡 Escaneando espectro... (Búnker en Standby)")
-    else:
-        st.info("📡 Buscando señal de sincronismo...")
-
-except Exception as e:
-    st.error(f"Falla de enlace: {e}")
+                    resp = st.radio("Opción:", [p['a'], p['b'], p['c'], p['d']])
+                    
+                    # El botón de envío
+                    btn_enviar = st.form_submit_button("📡 ENVIAR RESPUESTA")
+                    
+                    if btn_enviar:
+                        # Preparamos el paquete de datos
+                        payload_r = {
+                            "tipo": "RESPUESTA",
+                            "cedula": str(st.session_state.cedula),
+                            "id_activa": int(id_act),
+                            "respuesta": str(resp)
+                        }
+                        # Disparamos al Apps Script
+                        try:
+                            res = requests.post(URL_PUENTE, json=payload_r, timeout=10)
+                            if res.status_code == 200:
+                                st.success("¡Respuesta grabada en el búnker!")
+                                st.balloons()
+                            else:
+                                st.error("Error en el repetidor.")
+                        except:
+                            st.error("Falla de retorno.")
