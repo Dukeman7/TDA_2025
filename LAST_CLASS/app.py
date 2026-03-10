@@ -67,25 +67,42 @@ with st.sidebar:
             enviar_al_puente(payload)
             st.info("Transmisor apagado")
 
-# --- 6. CUERPO PRINCIPAL: VISTA ESTUDIANTE ---
-# --- REPARACIÓN DE EMERGENCIA ---
+# --- LECTURA DE EMERGENCIA (BYPASS 400) ---
 try:
-    # DEFINIMOS LA URL AQUÍ MISMO PARA QUE NO HAYA PÉRDIDA
-    URL_GSHEET = "https://docs.google.com/spreadsheets/d/1hSv4WuKk-1RR4PSjoV7peTGJksPok4PLAw0Wejy9hAM/edit?usp=sharing"
+    # 1. Limpiamos la URL para que sea exportable como CSV (esto nunca falla)
+    sheet_id = "1hSv4WuKk-1RR4PSjoV7peTGJksPok4PLAw0Wejy9hAM"
+    url_csv = f"https://docs.google.com/spreadsheets/d/{sheet_id}/gviz/tq?tqx=out:csv&sheet=CONTROL"
     
-    # Forzamos la lectura usando la URL explícita
-    df_ctrl = conn.read(spreadsheet=URL_GSHEET, worksheet="CONTROL", ttl=0)
+    # 2. Leemos directamente con Pandas (saltándonos st.connection para la lectura)
+    df_ctrl = pd.read_csv(url_csv)
     
-    if df_ctrl is not None and not df_ctrl.empty:
-        # ... (aquí sigue tu lógica de id_activa, estado, etc.)
-        estado = str(df_ctrl.iloc[0]['estado']).strip()
-        if estado == "ACTIVA":
-            st.warning("⚠️ ¡PREGUNTA EN EL AIRE!")
-            # (El resto del formulario...)
+    if not df_ctrl.empty:
+        # Normalizamos nombres de columnas por si acaso
+        df_ctrl.columns = [c.lower().strip() for c in df_ctrl.columns]
+        mando = df_ctrl.iloc[0]
+        
+        if str(mando['estado']).strip() == "ACTIVA":
+            id_act = int(mando['id_activa'])
+            t_ini = float(mando['inicio'])
+            t_aire = time.time() - t_ini
+            
+            if t_aire < 60:
+                st.warning(f"⚠️ ¡PREGUNTA EN EL AIRE! (ID: {id_act})")
+                # ... Aquí sigue tu código para mostrar la pregunta ...
+                p = df_pre.iloc[id_act]
+                with st.form("respuesta_rapida"):
+                    st.subheader(p['pregunta'])
+                    opc = st.radio("Respuesta:", [p['a'], p['b'], p['c'], p['d']])
+                    if st.form_submit_button("ENVIAR"):
+                        payload = {"tipo": "RESPUESTA", "cedula": st.session_state.cedula, "id_activa": id_act, "respuesta": opc}
+                        requests.post(URL_PUENTE, json=payload)
+                        st.success("¡Enviado!")
+            else:
+                st.info("⌛ Señal expirada. Esperando ráfaga del Prof. Duque.")
         else:
-            st.info("📡 Escaneando... Esperando señal del Prof. Duque.")
+            st.info("📡 Escaneando espectro... (Búnker en Standby)")
     else:
-        st.info("📡 Conexión establecida. Esperando que el Prof. lance la señal.")
+        st.info("📡 Buscando señal de sincronismo...")
 
 except Exception as e:
     st.error(f"Falla de enlace: {e}")
