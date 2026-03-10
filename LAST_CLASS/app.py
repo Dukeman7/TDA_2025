@@ -1,115 +1,58 @@
 import streamlit as st
 import pandas as pd
 import time
-import os
 import requests
-from streamlit_gsheets import GSheetsConnection
+import os
 
-# --- 1. CONFIGURACIÓN E INTERFAZ ---
+# --- 1. CONFIGURACIÓN Y PARÁMETROS ---
 st.set_page_config(page_title="TDA Unetrans - Búnker", layout="wide")
 
+# URL de tu Apps Script (Última versión generada)
 URL_PUENTE = "https://script.google.com/macros/s/AKfycbwTLwwTTOCfhiK-GSz_aF4LUZxiwqV-W3zLqcKzdmbaHSIjg2FDoM6cqIJwy4jK0kFyJQ/exec"
+# ID de tu Google Sheet
+SHEET_ID = "1hSv4WuKk-1RR4PSjoV7peTGJksPok4PLAw0Wejy9hAM"
+# Clave del profesor
 PASS_PROF = "BunkerTDA2024"
 
-# Conexión para lectura (Alumnos)
-conn = st.connection("gsheets", type=GSheetsConnection)
-
-# --- 2. FUNCIONES DE COMUNICACIÓN (UpLink) ---
-def enviar_al_puente(payload):
-    try:
-        res = requests.post(URL_PUENTE, json=payload, timeout=10)
-        return res.status_code == 200
-    except:
-        return False
-
-# --- 3. CARGA DE DATOS ---
+# --- 2. CARGA DE DATOS (CSV LOCALES) ---
 @st.cache_data(ttl=600)
-def cargar_csvs():
-    # Detectamos la ruta donde está parado el archivo app.py
+def cargar_datos_locales():
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    
-    # Armamos la ruta completa a los archivos
-    ruta_preguntas = os.path.join(BASE_DIR, "preguntas_tda_50.csv")
-    ruta_estudiantes = os.path.join(BASE_DIR, "estudiantes_iut.csv")
-    
-    # Verificamos si existen antes de intentar leer
-    if not os.path.exists(ruta_preguntas):
-        st.error(f"❌ No se halló preguntas_tda_50.csv en {BASE_DIR}")
+    try:
+        p_path = os.path.join(BASE_DIR, "preguntas_tda_50.csv")
+        e_path = os.path.join(BASE_DIR, "estudiantes_iut.csv")
+        df_p = pd.read_csv(p_path)
+        df_e = pd.read_csv(e_path, dtype=str)
+        return df_p, df_e
+    except Exception as e:
+        st.error(f"Error cargando archivos base: {e}")
         st.stop()
-        
-    preguntas = pd.read_csv(ruta_preguntas)
-    estudiantes = pd.read_csv(ruta_estudiantes, dtype=str)
-    return preguntas, estudiantes
 
-df_pre, df_est = cargar_csvs()
+df_pre, df_est = cargar_datos_locales()
 
-# --- 4. LÓGICA DE SESIÓN ---
+# --- 3. MANEJO DE SESIÓN ---
 if "cedula" not in st.session_state:
     st.session_state.cedula = None
 
-# --- 5. SIDEBAR: PANEL DEL PROFESOR ---
+# --- 4. PANEL DE CONTROL (PROFESOR) ---
 with st.sidebar:
     st.title("📡 Master Control")
-    clave = st.text_input("Acceso Maestro:", type="password")
+    llave = st.text_input("Acceso Maestro:", type="password")
     
-    if clave == PASS_PROF:
-        st.success("Modo Instructor")
-        id_q = st.number_input("ID Pregunta (0-50):", 0, len(df_pre)-1)
+    if llave == PASS_PROF:
+        st.success("Modo Instructor Activo")
+        idx_pregunta = st.number_input("Seleccione ID de Pregunta:", 0, len(df_pre)-1)
         
-        if st.button("🚀 LANZAR PREGUNTA"):
-            payload = {"tipo": "CONTROL", "id_activa": id_q, "inicio": time.time(), "estado": "ACTIVA"}
-            if enviar_al_puente(payload):
-                st.toast("¡Señal en el aire!")
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("🚀 LANZAR"):
+                payload = {
+                    "tipo": "CONTROL", 
+                    "id_activa": int(idx_pregunta), 
+                    "inicio": time.time(), 
+                    "estado": "ACTIVA"
+                }
+                requests.post(URL_PUENTE, json=payload)
                 st.balloons()
-        
-        if st.button("🛑 APAGAR SEÑAL"):
-            payload = {"tipo": "CONTROL", "id_activa": 0, "inicio": 0, "estado": "OFF"}
-            enviar_al_puente(payload)
-            st.info("Transmisor apagado")
-
-# --- LECTURA DE EMERGENCIA (BYPASS 400) ---
-try:
-    # 1. Limpiamos la URL para que sea exportable como CSV (esto nunca falla)
-    sheet_id = "1hSv4WuKk-1RR4PSjoV7peTGJksPok4PLAw0Wejy9hAM"
-    url_csv = f"https://docs.google.com/spreadsheets/d/{sheet_id}/gviz/tq?tqx=out:csv&sheet=CONTROL"
-    
-    # 2. Leemos directamente con Pandas (saltándonos st.connection para la lectura)
-    df_ctrl = pd.read_csv(url_csv)
-    
-    if not df_ctrl.empty:
-        # Normalizamos nombres de columnas por si acaso
-        df_ctrl.columns = [c.lower().strip() for c in df_ctrl.columns]
-        mando = df_ctrl.iloc[0]
-        
-        if str(mando['estado']).strip() == "ACTIVA":
-            id_act = int(mando['id_activa'])
-            t_ini = float(mando['inicio'])
-            t_aire = time.time() - t_ini
-            
-# --- DENTRO DEL BLOQUE DE LA PREGUNTA ACTIVA ---
-                p = df_pre.iloc[id_act]
-                with st.form("examen_tda"):
-                    st.subheader(p['pregunta'])
-                    resp = st.radio("Opción:", [p['a'], p['b'], p['c'], p['d']])
-                    
-                    # El botón de envío
-                    btn_enviar = st.form_submit_button("📡 ENVIAR RESPUESTA")
-                    
-                    if btn_enviar:
-                        # Preparamos el paquete de datos
-                        payload_r = {
-                            "tipo": "RESPUESTA",
-                            "cedula": str(st.session_state.cedula),
-                            "id_activa": int(id_act),
-                            "respuesta": str(resp)
-                        }
-                        # Disparamos al Apps Script
-                        try:
-                            res = requests.post(URL_PUENTE, json=payload_r, timeout=10)
-                            if res.status_code == 200:
-                                st.success("¡Respuesta grabada en el búnker!")
-                                st.balloons()
-                            else:
-                                st.error("Error en el repetidor.")
-                        except:
-                            st.error("Falla de retorno.")
+        with col2:
+            if st.button("🛑 APAGAR"):
